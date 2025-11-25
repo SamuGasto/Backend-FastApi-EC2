@@ -132,3 +132,7 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Migration backups
+*_backup.py
+*_memory_backup.py

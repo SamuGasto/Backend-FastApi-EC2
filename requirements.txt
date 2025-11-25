@@ -1,7 +1,14 @@
+# Core dependencies
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
 gunicorn>=21.2.0
 pydantic>=2.5.0
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+
+# Testing
 pytest>=7.4.3
 hypothesis>=6.92.1
 httpx>=0.25.2

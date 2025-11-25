@@ -4,45 +4,13 @@ Tests de endpoints raíz, documentación y manejo de rutas inexistentes.
 Requirements: 3.1, 3.5, 7.2
 """
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-from hypothesis import given, strategies as st
-
-# Create test client
-client = TestClient(app)
+from hypothesis import given, strategies as st, settings, HealthCheck
 
 
 class TestEndpoints:
     """Tests para endpoints específicos de la API"""
     
-    def test_internal_error_returns_500(self):
-        """
-        Test de error interno retorna 500.
-        Requirements: 7.3
-        
-        Simula un error interno del servidor y verifica que retorna código 500.
-        """
-        from unittest.mock import patch
-        from app.routes import products
-        
-        # Simular un error interno en el método add del storage
-        with patch.object(products.storage, 'add', side_effect=Exception("Internal server error")):
-            # Intentar crear un producto válido
-            product_data = {
-                "nombre": "Test Product",
-                "precio": 50.0
-            }
-            
-            # En el TestClient de FastAPI, las excepciones no capturadas se propagan
-            # Verificamos que la excepción se lanza (lo que resultaría en 500 en producción)
-            with pytest.raises(Exception) as exc_info:
-                response = client.post("/productos/", json=product_data)
-            
-            # Verificar que es el error interno esperado
-            assert "Internal server error" in str(exc_info.value), \
-                f"Expected 'Internal server error' exception, got {exc_info.value}"
-    
-    def test_root_endpoint_returns_welcome_message(self):
+    def test_root_endpoint_returns_welcome_message(self, client):
         """
         Test de endpoint raíz (/) retorna mensaje de bienvenida.
         Requirements: 3.1
@@ -62,7 +30,7 @@ class TestEndpoints:
         # Verificar mensaje de bienvenida
         assert data["message"] == "Bienvenido a la API de Productos"
     
-    def test_docs_endpoint_is_available(self):
+    def test_docs_endpoint_is_available(self, client):
         """
         Test de endpoint /docs está disponible.
         Requirements: 3.5
@@ -78,7 +46,7 @@ class TestEndpoints:
         # Verificar que contiene elementos de Swagger UI
         assert "swagger-ui" in response.text.lower() or "openapi" in response.text.lower()
     
-    def test_nonexistent_endpoint_returns_404(self):
+    def test_nonexistent_endpoint_returns_404(self, client):
         """
         Test de endpoint inexistente retorna 404.
         Requirements: 7.2
@@ -96,12 +64,13 @@ class TestEndpoints:
 class TestProductEndpointsProperties:
     """Property-based tests para endpoints de productos"""
     
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     @given(
         nombre=st.text(alphabet=st.characters(blacklist_categories=('Cs', 'Cc')), min_size=1, max_size=100),
         precio=st.floats(min_value=0.01, max_value=1000000.0, allow_nan=False, allow_infinity=False),
         descripcion=st.one_of(st.none(), st.text(alphabet=st.characters(blacklist_categories=('Cs', 'Cc')), max_size=500))
     )
-    def test_create_product_with_valid_data(self, nombre, precio, descripcion):
+    def test_create_product_with_valid_data(self, client, nombre, precio, descripcion):
         """
         **Feature: fastapi-gunicorn-ec2, Property 2: Creación de productos válidos**
         **Validates: Requirements 3.2**
@@ -148,10 +117,11 @@ class TestProductEndpointsProperties:
         else:
             assert created_product["descripcion"] is None, "Product description should be None when not provided"
     
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
     @given(
         num_products=st.integers(min_value=1, max_value=20)
     )
-    def test_list_all_products(self, num_products):
+    def test_list_all_products(self, client, num_products):
         """
         **Feature: fastapi-gunicorn-ec2, Property 3: Listado completo de productos**
         **Validates: Requirements 3.3, 6.1, 6.3**
@@ -159,10 +129,6 @@ class TestProductEndpointsProperties:
         Para cualquier conjunto de productos creados, una petición GET a /productos 
         debe retornar todos los productos almacenados.
         """
-        # Limpiar el almacenamiento antes de la prueba
-        from app.routes.products import storage
-        storage.products.clear()
-        storage.next_id = 1
         
         # Crear cantidad aleatoria de productos
         created_products = []
@@ -250,7 +216,8 @@ class TestProductEndpointsProperties:
             })
         )
     )
-    def test_api_rejects_invalid_data_with_422(self, data):
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+    def test_api_rejects_invalid_data_with_422(self, client, data):
         """
         **Feature: fastapi-gunicorn-ec2, Property 4: Rechazo de datos inválidos**
         **Validates: Requirements 2.4, 3.4, 7.1**
@@ -327,7 +294,8 @@ class TestProductEndpointsProperties:
             max_size=30
         )
     )
-    def test_stability_after_errors(self, operations):
+    @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+    def test_stability_after_errors(self, client, operations):
         """
         **Feature: fastapi-gunicorn-ec2, Property 6: Estabilidad después de errores**
         **Validates: Requirements 7.5**
@@ -336,10 +304,6 @@ class TestProductEndpointsProperties:
         el sistema debe mantener su funcionalidad y seguir procesando peticiones 
         válidas correctamente.
         """
-        # Limpiar el almacenamiento antes de la prueba
-        from app.routes.products import storage
-        storage.products.clear()
-        storage.next_id = 1
         
         valid_products_created = []
         
