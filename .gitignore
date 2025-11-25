@@ -136,3 +136,6 @@ Thumbs.db
 # Migration backups
 *_backup.py
 *_memory_backup.py
+
+# IDE
+.kiro/
