@@ -106,7 +106,7 @@ sudo systemctl enable fastapi
 DATABASE_URL=$(aws ssm get-parameter --name "/productos-api/database-url" --with-decryption --query "Parameter.Value" --output text --region us-east-1)
 
 # Crear .env
-cat > /home/ec2-user/fastapi-gunicorn-ec2/.env << EOF
+cat > /Backend-FastApi-EC2/.env << EOF
 DATABASE_URL=$DATABASE_URL
 APP_HOST=0.0.0.0
 APP_PORT=8000
@@ -115,7 +115,7 @@ LOG_LEVEL=info
 EOF
 
 # Cambiar permisos
-chown ec2-user:ec2-user /home/ec2-user/fastapi-gunicorn-ec2/.env
+chown ec2-user:ec2-user  /Backend-FastApi-EC2/.env
 
 # Iniciar servicio
 systemctl start fastapi

@@ -153,20 +153,19 @@ curl -X DELETE http://localhost:8000/productos/1
 
 ## Troubleshooting
 
-**No conecta a PostgreSQL:**
+**Problemas comunes:**
 
-- Verifica DATABASE_URL en .env
-- Confirma Security Group de RDS permite conexiones desde EC2
-
-**Puerto ocupado:**
-
-- Cambia puerto en `gunicorn_config.py`
+- ❌ Error "connection to localhost": [Solución](TROUBLESHOOTING.md#-error-connection-to-server-at-localhost-12700-1-port-5432-failed)
+- ❌ Worker failed to boot: [Solución](TROUBLESHOOTING.md#-error-worker-failed-to-boot)
+- ❌ No conecta a RDS: [Solución](TROUBLESHOOTING.md#-error-cant-connect-to-rds)
 
 **Ver logs:**
 
 ```bash
 sudo journalctl -u fastapi -f
 ```
+
+📖 **Guía completa de troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ---
 
