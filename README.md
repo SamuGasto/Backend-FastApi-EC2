@@ -40,6 +40,8 @@ source venv/bin/activate
 
 ## Despliegue en EC2
 
+### Setup Rápido
+
 ```bash
 # Conectar
 ssh -i tu-clave.pem ec2-user@tu-ip-ec2
@@ -67,36 +69,23 @@ chmod +x start.sh
 
 **No olvides abrir el puerto 8000 en tu Security Group!**
 
+📖 **Guía detallada paso a paso:** [EC2_SETUP.md](EC2_SETUP.md)
+
 ### Hacerlo un servicio
 
-```bash
-sudo nano /etc/systemd/system/fastapi.service
-```
-
-Pega:
-
-```ini
-[Unit]
-Description=FastAPI Products API
-After=network.target
-
-[Service]
-User=ec2-user
-WorkingDirectory=/home/ec2-user/fastapi-gunicorn-ec2
-Environment="PATH=/home/ec2-user/fastapi-gunicorn-ec2/venv/bin"
-ExecStart=/home/ec2-user/fastapi-gunicorn-ec2/venv/bin/gunicorn -c gunicorn_config.py app.main:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Activar:
+El archivo `fastapi.service` ya está incluido en el repositorio:
 
 ```bash
+# Copiar el archivo de servicio
+sudo cp fastapi.service /etc/systemd/system/
+
+# Activar el servicio
 sudo systemctl daemon-reload
 sudo systemctl enable fastapi
 sudo systemctl start fastapi
+
+# Verificar que está corriendo
+sudo systemctl status fastapi
 ```
 
 ---

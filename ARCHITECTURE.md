@@ -77,12 +77,13 @@ sudo yum install python3 python3-pip git -y
 
 # Clonar y configurar
 git clone https://github.com/SamuGasto/Backend-FastApi-EC2.git
-cd fastapi-gunicorn-ec2
+cd Backend-FastApi-EC2
 chmod +x setup.sh
 ./setup.sh
 
-# Configurar como servicio
-sudo cp /path/to/fastapi.service /etc/systemd/system/
+# Configurar como servicio systemd
+# El archivo fastapi.service ya está en el repositorio
+sudo cp fastapi.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable fastapi
 
