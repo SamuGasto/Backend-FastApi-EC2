@@ -13,6 +13,7 @@ class ProductDB(Base):
     nombre = Column(String, nullable=False)
     precio = Column(Float, nullable=False)
     descripcion = Column(String, nullable=True)
+    stock = Column(Integer, nullable=False, default=0)
 
 
 # Modelo Pydantic (validación y API)
@@ -25,11 +26,13 @@ class Product(BaseModel):
         nombre: Nombre del producto (obligatorio, mínimo 1 carácter)
         precio: Precio del producto (obligatorio, debe ser mayor que 0)
         descripcion: Descripción opcional del producto
+        stock: Cantidad disponible en inventario (debe ser >= 0)
     """
     id: Optional[int] = None
     nombre: str = Field(..., min_length=1)
     precio: float = Field(..., gt=0)
     descripcion: Optional[str] = None
+    stock: int = Field(..., ge=0)
     
     class Config:
         from_attributes = True

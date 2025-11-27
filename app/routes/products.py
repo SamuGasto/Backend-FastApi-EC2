@@ -14,7 +14,7 @@ async def create_product(product: Product, db: Session = Depends(get_db)):
     Crea un nuevo producto en PostgreSQL.
     
     Args:
-        product: Datos del producto a crear (nombre, precio, descripcion)
+        product: Datos del producto a crear (nombre, precio, descripcion, stock)
         db: Sesión de base de datos (inyectada automáticamente)
     
     Returns:
@@ -23,7 +23,8 @@ async def create_product(product: Product, db: Session = Depends(get_db)):
     db_product = ProductDB(
         nombre=product.nombre,
         precio=product.precio,
-        descripcion=product.descripcion
+        descripcion=product.descripcion,
+        stock=product.stock
     )
     db.add(db_product)
     db.commit()
@@ -90,6 +91,7 @@ async def update_product(product_id: int, product: Product, db: Session = Depend
     db_product.nombre = product.nombre
     db_product.precio = product.precio
     db_product.descripcion = product.descripcion
+    db_product.stock = product.stock
     
     db.commit()
     db.refresh(db_product)

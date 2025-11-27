@@ -1,184 +1,253 @@
-# API de Productos - FastAPI + PostgreSQL
+# API de Productos - FastAPI + PostgreSQL + AWS
 
-API REST simple para gestionar productos. Para tests de estrés.
+API REST para gestión de productos con FastAPI, PostgreSQL (RDS) y despliegue en AWS EC2.
 
-## Setup Rápido
+## 🚀 Quick Start
+
+### Local
 
 ```bash
-# 1. Clonar
+# 1. Clonar e instalar
 git clone https://github.com/SamuGasto/Backend-FastApi-EC2.git
 cd Backend-FastApi-EC2
+bash setup.sh
 
-# 2. Instalar
-./setup.sh
-
-# 3. Configurar .env
+# 2. Configurar base de datos
 cp .env.example .env
-nano .env  # Pega tu DATABASE_URL
+# Edita .env con tu DATABASE_URL
 
-# 4. Verificar
+# 3. Verificar configuración
 source venv/bin/activate
 python check_config.py
 
-# 5. Iniciar
-./start.sh
+# 4. Iniciar servidor
+bash start.sh
 ```
 
 Abre: http://localhost:8000/docs
 
-## Endpoints
+### EC2 (Despliegue Automatizado)
+
+```bash
+# En tu instancia EC2
+curl -O https://raw.githubusercontent.com/SamuGasto/Backend-FastApi-EC2/main/deploy-ec2.sh
+chmod +x deploy-ec2.sh
+./deploy-ec2.sh "postgresql://user:pass@rds-endpoint:5432/db?sslmode=require"
+```
+
+## 📦 API Endpoints
+
+| Método | Endpoint          | Descripción         |
+| ------ | ----------------- | ------------------- |
+| GET    | `/health`         | Health check        |
+| GET    | `/productos`      | Listar productos    |
+| POST   | `/productos`      | Crear producto      |
+| GET    | `/productos/{id}` | Obtener producto    |
+| PUT    | `/productos/{id}` | Actualizar producto |
+| DELETE | `/productos/{id}` | Eliminar producto   |
+
+### Ejemplos
 
 ```bash
 # Crear producto
 curl -X POST http://localhost:8000/productos \
   -H "Content-Type: application/json" \
-  -d '{"nombre": "Laptop", "precio": 999.99}'
+  -d '{
+    "nombre": "Laptop HP",
+    "descripcion": "Laptop 15 pulgadas",
+    "precio": 899.99,
+    "stock": 10
+  }'
 
 # Listar productos
 curl http://localhost:8000/productos
-
-# Obtener uno
-curl http://localhost:8000/productos/1
-
-# Actualizar
-curl -X PUT http://localhost:8000/productos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"nombre": "Laptop Pro", "precio": 1299.99}'
-
-# Eliminar
-curl -X DELETE http://localhost:8000/productos/1
 
 # Health check
 curl http://localhost:8000/health
 ```
 
-## Despliegue en EC2
+## 🗄️ Configuración de Base de Datos
+
+### RDS PostgreSQL
+
+1. Crear instancia RDS PostgreSQL en AWS
+2. Configurar Security Group:
+   - **Inbound**: PostgreSQL (5432) desde Security Group de EC2
+3. Obtener endpoint de conexión
+4. Configurar `.env`:
 
 ```bash
-# Conectar
-ssh -i tu-clave.pem ec2-user@tu-ip-ec2
-
-# Instalar
-sudo yum update -y
-sudo yum install python3 python3-pip git -y
-
-# Clonar
-git clone https://github.com/SamuGasto/Backend-FastApi-EC2.git
-cd Backend-FastApi-EC2
-
-# Setup
-./setup.sh
-
-# Configurar .env (reemplaza con tu DATABASE_URL real)
-echo "DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres" > .env
-echo "APP_PORT=8000" >> .env
-
-# Copiar servicio
-sudo cp fastapi.service /etc/systemd/system/
-
-# Iniciar
-sudo systemctl daemon-reload
-sudo systemctl enable fastapi
-sudo systemctl start fastapi
-
-# Verificar
-sudo systemctl status fastapi
-curl http://localhost:8000/health
+DATABASE_URL=postgresql://admin:password@rds-endpoint.amazonaws.com:5432/postgres?sslmode=require
+APP_PORT=8000
 ```
 
-**Abrir puerto 8000 en Security Group!**
+**Importante:** RDS requiere `?sslmode=require` al final del URL.
 
-### Despliegue Automatizado (Recomendado)
+### Migración de Base de Datos
+
+Si actualizas el esquema:
 
 ```bash
-# Descargar y ejecutar script de despliegue
-curl -O https://raw.githubusercontent.com/SamuGasto/Backend-FastApi-EC2/main/deploy-ec2.sh
-chmod +x deploy-ec2.sh
-
-# Ejecutar (reemplaza con tu DATABASE_URL real)
-./deploy-ec2.sh "postgresql://admin:password@tu-rds-endpoint:5432/postgres"
+psql "$DATABASE_URL" -f migrate_database.sql
 ```
 
-El script hace todo automáticamente:
+## 🔧 Despliegue en AWS
 
-- ✅ Instala dependencias
-- ✅ Clona el repositorio
-- ✅ Configura el .env
-- ✅ Verifica la configuración
-- ✅ Inicia el servicio
-- ✅ Prueba que funciona
+### Arquitectura Recomendada
 
-## Configurar PostgreSQL (RDS)
+```
+Internet → ALB → Auto Scaling Group (EC2) → RDS PostgreSQL
+```
 
-1. Crear DB en RDS (PostgreSQL, Free tier)
-2. Security Group de RDS: permitir puerto 5432 desde EC2
-3. Obtener endpoint de RDS
-4. Configurar en .env:
+### Pasos
 
-   ```bash
-   # Si RDS requiere SSL (recomendado)
-   DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres?sslmode=require
+1. **Crear AMI** desde EC2 funcionando
+2. **Crear Launch Template** con la AMI
+3. **Crear Target Group** con health check en `/health`
+4. **Crear Application Load Balancer**
+5. **Crear Auto Scaling Group** (2-10 instancias)
 
-   # Sin SSL (solo para desarrollo)
-   DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres
-   ```
+Ver guía completa: [docs/AUTOSCALING.md](docs/AUTOSCALING.md)
 
-**Nota:** RDS de AWS requiere SSL por defecto. Agrega `?sslmode=require` al final del DATABASE_URL.
-
-## Tests
+## 🧪 Testing
 
 ```bash
+# Tests unitarios
 pytest -v
+
+# Test de API completo
+bash scripts/test_api.sh http://localhost:8000
 ```
 
-## Monitoreo y Troubleshooting
-
-### Ver logs en tiempo real
+## 📊 Monitoreo
 
 ```bash
+# Ver logs en tiempo real
 sudo journalctl -u fastapi -f
-```
 
-### Comandos útiles
-
-```bash
-# Ver estado
+# Estado del servicio
 sudo systemctl status fastapi
 
-# Reiniciar
+# Reiniciar servicio
 sudo systemctl restart fastapi
-
-# Ver .env (sin passwords)
-cat .env | sed 's/:.*@/:****@/'
-
-# Probar configuración
-cd /home/ec2-user/Backend-FastApi-EC2
-source venv/bin/activate
-python check_config.py
 ```
 
-### Error común: "Could not parse SQLAlchemy URL"
+## 🛠️ Scripts Útiles
 
-**Causa:** .env mal formado o DATABASE_URL requiere SSL
+| Script                   | Descripción                    |
+| ------------------------ | ------------------------------ |
+| `setup.sh`               | Instalación inicial            |
+| `start.sh`               | Iniciar servidor local         |
+| `check_config.py`        | Verificar configuración        |
+| `scripts/test_api.sh`    | Pruebas completas de API       |
+| `scripts/diagnose_db.py` | Diagnosticar conexión a BD     |
+| `deploy-ec2.sh`          | Despliegue automatizado en EC2 |
+
+## 🔍 Troubleshooting
+
+### Timeout en `/productos`
+
+**Causa:** Security Group de RDS no permite conexiones desde EC2
+
+**Solución:**
+
+1. AWS Console → RDS → Tu instancia → Security Group
+2. Edit inbound rules → Add rule:
+   - Type: PostgreSQL (5432)
+   - Source: Security Group de EC2
+
+### Error "Could not parse SQLAlchemy URL"
+
+**Causa:** DATABASE_URL mal formado
 
 **Solución:**
 
 ```bash
-# Recrear .env con SSL
-echo "DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require" > .env
-echo "APP_PORT=8000" >> .env
-sudo systemctl restart fastapi
+# Formato correcto
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
 ```
 
-📖 **Guía completa:** [MONITORING.md](MONITORING.md)
-
-## Variables de Entorno
+### Diagnosticar problemas de conexión
 
 ```bash
-DATABASE_URL=postgresql://user:pass@host:5432/db  # Requerido
-APP_PORT=8000                                      # Opcional
+python scripts/diagnose_db.py
 ```
+
+## 📁 Estructura del Proyecto
+
+```
+.
+├── app/
+│   ├── models/          # Modelos de datos
+│   ├── routes/          # Endpoints de la API
+│   ├── config.py        # Configuración
+│   ├── database.py      # Conexión a BD
+│   └── main.py          # Aplicación principal
+├── tests/               # Tests unitarios
+├── scripts/             # Scripts de utilidad
+├── docs/                # Documentación adicional
+├── requirements.txt     # Dependencias Python
+├── setup.sh            # Script de instalación
+├── deploy-ec2.sh       # Script de despliegue
+└── fastapi.service     # Servicio systemd
+```
+
+## 🔐 Security Groups
+
+### EC2 Security Group
+
+- **Inbound**: HTTP (8000) desde ALB o 0.0.0.0/0
+- **Inbound**: SSH (22) desde tu IP
+- **Outbound**: All traffic
+
+### RDS Security Group
+
+- **Inbound**: PostgreSQL (5432) desde EC2 Security Group
+- **Outbound**: All traffic
+
+## 📝 Variables de Entorno
+
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require  # Requerido
+APP_PORT=8000                                                       # Opcional (default: 8000)
+WORKERS=4                                                           # Opcional (default: 4)
+LOG_LEVEL=info                                                      # Opcional (default: info)
+```
+
+## 🚦 Health Check
+
+El endpoint `/health` verifica:
+
+- ✅ Aplicación corriendo
+- ✅ Conexión a base de datos
+
+Respuesta exitosa:
+
+```json
+{
+  "status": "healthy",
+  "service": "productos-api",
+  "database": "connected"
+}
+```
+
+## 📚 Documentación Adicional
+
+- [Guía de Auto Scaling](docs/AUTOSCALING.md) - Configuración de ALB y ASG
+- [Guía de Monitoreo](docs/MONITORING.md) - Logs y troubleshooting
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -am 'Agregar funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
+
+## 📄 Licencia
+
+MIT
 
 ---
 
-Hecho con ❤️ y FastAPI
+Hecho con ❤️ usando FastAPI y AWS

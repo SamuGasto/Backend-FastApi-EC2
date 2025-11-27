@@ -149,6 +149,14 @@ Thumbs.db
 # Test database
 test.db
 test.db-journal
+*.db
 
 # IDE
 .kiro/
+
+# Hypothesis (property testing)
+.hypothesis/
+
+# Temporary files
+*.tmp
+*.bak
