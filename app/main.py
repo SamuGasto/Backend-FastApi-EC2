@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="API de Productos",
     description="API REST para gestión de productos con PostgreSQL",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False  # Evita redirecciones automáticas por trailing slash
 )
 
 # Include product routes

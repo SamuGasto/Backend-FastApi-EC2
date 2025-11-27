@@ -5,6 +5,7 @@ from app.models.product import Product, ProductDB
 from app.database import get_db
 
 # Create router for product endpoints
+# redirect_slashes=False evita redirecciones automáticas
 router = APIRouter(prefix="/productos", tags=["productos"])
 
 
