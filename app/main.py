@@ -44,8 +44,10 @@ async def health_check():
     try:
         # Verificar conexión a base de datos
         from app.database import engine
+        from sqlalchemy import text
+        
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         
         return {
             "status": "healthy",

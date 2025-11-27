@@ -114,9 +114,16 @@ El script hace todo automáticamente:
 2. Security Group de RDS: permitir puerto 5432 desde EC2
 3. Obtener endpoint de RDS
 4. Configurar en .env:
-   ```
+
+   ```bash
+   # Si RDS requiere SSL (recomendado)
+   DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres?sslmode=require
+
+   # Sin SSL (solo para desarrollo)
    DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres
    ```
+
+**Nota:** RDS de AWS requiere SSL por defecto. Agrega `?sslmode=require` al final del DATABASE_URL.
 
 ## Tests
 
@@ -124,18 +131,46 @@ El script hace todo automáticamente:
 pytest -v
 ```
 
-## Troubleshooting
+## Monitoreo y Troubleshooting
+
+### Ver logs en tiempo real
 
 ```bash
-# Ver logs
 sudo journalctl -u fastapi -f
+```
+
+### Comandos útiles
+
+```bash
+# Ver estado
+sudo systemctl status fastapi
 
 # Reiniciar
 sudo systemctl restart fastapi
 
-# Probar conexión a DB
-psql -h tu-rds-endpoint -U admin -d postgres
+# Ver .env (sin passwords)
+cat .env | sed 's/:.*@/:****@/'
+
+# Probar configuración
+cd /home/ec2-user/Backend-FastApi-EC2
+source venv/bin/activate
+python check_config.py
 ```
+
+### Error común: "Could not parse SQLAlchemy URL"
+
+**Causa:** .env mal formado o DATABASE_URL requiere SSL
+
+**Solución:**
+
+```bash
+# Recrear .env con SSL
+echo "DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require" > .env
+echo "APP_PORT=8000" >> .env
+sudo systemctl restart fastapi
+```
+
+📖 **Guía completa:** [MONITORING.md](MONITORING.md)
 
 ## Variables de Entorno
 
