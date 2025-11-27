@@ -97,12 +97,18 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Docker (not used)
+Dockerfile
+docker-compose.yml
+.dockerignore
 
 # Spyder project settings
 .spyderproject
@@ -136,6 +142,13 @@ Thumbs.db
 # Migration backups
 *_backup.py
 *_memory_backup.py
+
+# Docker
+.env.docker
+
+# Test database
+test.db
+test.db-journal
 
 # IDE
 .kiro/

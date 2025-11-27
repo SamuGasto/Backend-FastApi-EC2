@@ -8,8 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-# Establecer modo test antes de importar app
+# Establecer modo test y DATABASE_URL para tests antes de importar app
 os.environ["TESTING"] = "1"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from app.database import Base, get_db
 from app.main import app

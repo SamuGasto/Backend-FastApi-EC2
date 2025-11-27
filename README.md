@@ -1,46 +1,58 @@
-# API de Productos - FastAPI + PostgreSQL 🚀
+# API de Productos - FastAPI + PostgreSQL
 
-API REST para gestionar productos. Simple, directa, lista para EC2.
+API REST simple para gestionar productos. Para tests de estrés.
 
-## Setup en 3 Pasos
-
-### 1. Clonar e instalar
+## Setup Rápido
 
 ```bash
+# 1. Clonar
 git clone https://github.com/SamuGasto/Backend-FastApi-EC2.git
-cd fastapi-gunicorn-ec2
-chmod +x setup.sh
+cd Backend-FastApi-EC2
+
+# 2. Instalar
 ./setup.sh
-```
 
-### 2. Configurar base de datos
+# 3. Configurar .env
+cp .env.example .env
+nano .env  # Pega tu DATABASE_URL
 
-Edita `.env`:
-
-```bash
-nano .env
-```
-
-Agrega tu DATABASE_URL:
-
-```
-DATABASE_URL=postgresql://usuario:password@tu-endpoint:5432/nombre_db
-```
-
-### 3. Iniciar
-
-```bash
+# 4. Verificar
 source venv/bin/activate
+python check_config.py
+
+# 5. Iniciar
 ./start.sh
 ```
 
-✅ Listo! API en `http://localhost:8000/docs`
+Abre: http://localhost:8000/docs
 
----
+## Endpoints
+
+```bash
+# Crear producto
+curl -X POST http://localhost:8000/productos \
+  -H "Content-Type: application/json" \
+  -d '{"nombre": "Laptop", "precio": 999.99}'
+
+# Listar productos
+curl http://localhost:8000/productos
+
+# Obtener uno
+curl http://localhost:8000/productos/1
+
+# Actualizar
+curl -X PUT http://localhost:8000/productos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"nombre": "Laptop Pro", "precio": 1299.99}'
+
+# Eliminar
+curl -X DELETE http://localhost:8000/productos/1
+
+# Health check
+curl http://localhost:8000/health
+```
 
 ## Despliegue en EC2
-
-### Setup Rápido
 
 ```bash
 # Conectar
@@ -52,156 +64,86 @@ sudo yum install python3 python3-pip git -y
 
 # Clonar
 git clone https://github.com/SamuGasto/Backend-FastApi-EC2.git
-cd fastapi-gunicorn-ec2
+cd Backend-FastApi-EC2
 
 # Setup
-chmod +x setup.sh
 ./setup.sh
 
-# Configurar .env con tu DATABASE_URL
-nano .env
+# Configurar .env (reemplaza con tu DATABASE_URL real)
+echo "DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres" > .env
+echo "APP_PORT=8000" >> .env
 
-# Iniciar
-source venv/bin/activate
-chmod +x start.sh
-./start.sh
-```
-
-**No olvides abrir el puerto 8000 en tu Security Group!**
-
-📖 **Guía detallada paso a paso:** [EC2_SETUP.md](EC2_SETUP.md)
-
-### Hacerlo un servicio
-
-El archivo `fastapi.service` ya está incluido en el repositorio:
-
-```bash
-# Copiar el archivo de servicio
+# Copiar servicio
 sudo cp fastapi.service /etc/systemd/system/
 
-# Activar el servicio
+# Iniciar
 sudo systemctl daemon-reload
 sudo systemctl enable fastapi
 sudo systemctl start fastapi
 
-# Verificar que está corriendo
+# Verificar
 sudo systemctl status fastapi
+curl http://localhost:8000/health
 ```
 
----
+**Abrir puerto 8000 en Security Group!**
 
-## Endpoints
-
-### Crear producto
+### Despliegue Automatizado (Recomendado)
 
 ```bash
-curl -X POST http://localhost:8000/productos \
-  -H "Content-Type: application/json" \
-  -d '{"nombre": "Laptop", "precio": 999.99}'
+# Descargar y ejecutar script de despliegue
+curl -O https://raw.githubusercontent.com/SamuGasto/Backend-FastApi-EC2/main/deploy-ec2.sh
+chmod +x deploy-ec2.sh
+
+# Ejecutar (reemplaza con tu DATABASE_URL real)
+./deploy-ec2.sh "postgresql://admin:password@tu-rds-endpoint:5432/postgres"
 ```
 
-### Listar todos
+El script hace todo automáticamente:
 
-```bash
-curl http://localhost:8000/productos
-```
-
-### Obtener uno
-
-```bash
-curl http://localhost:8000/productos/1
-```
-
-### Actualizar
-
-```bash
-curl -X PUT http://localhost:8000/productos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"nombre": "Laptop Pro", "precio": 1299.99}'
-```
-
-### Eliminar
-
-```bash
-curl -X DELETE http://localhost:8000/productos/1
-```
-
----
+- ✅ Instala dependencias
+- ✅ Clona el repositorio
+- ✅ Configura el .env
+- ✅ Verifica la configuración
+- ✅ Inicia el servicio
+- ✅ Prueba que funciona
 
 ## Configurar PostgreSQL (RDS)
 
-1. **Crear DB en RDS:**
-
-   - Engine: PostgreSQL
-   - Template: Free tier
-   - Username: admin
-   - Password: (elige una)
-
-2. **Security Group de RDS:**
-
-   - Agregar regla: PostgreSQL (5432)
-   - Source: Security Group de tu EC2
-
-3. **Obtener endpoint** (en consola RDS)
-
-4. **Configurar .env:**
+1. Crear DB en RDS (PostgreSQL, Free tier)
+2. Security Group de RDS: permitir puerto 5432 desde EC2
+3. Obtener endpoint de RDS
+4. Configurar en .env:
    ```
-   DATABASE_URL=postgresql://admin:tu_password@tu-endpoint:5432/postgres
+   DATABASE_URL=postgresql://admin:password@tu-rds-endpoint:5432/postgres
    ```
 
----
+## Tests
+
+```bash
+pytest -v
+```
 
 ## Troubleshooting
 
-**Problemas comunes:**
-
-- ❌ Error "connection to localhost": [Solución](TROUBLESHOOTING.md#-error-connection-to-server-at-localhost-12700-1-port-5432-failed)
-- ❌ Worker failed to boot: [Solución](TROUBLESHOOTING.md#-error-worker-failed-to-boot)
-- ❌ No conecta a RDS: [Solución](TROUBLESHOOTING.md#-error-cant-connect-to-rds)
-
-**Ver logs:**
-
 ```bash
+# Ver logs
 sudo journalctl -u fastapi -f
-```
 
-📖 **Guía completa de troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-
----
-
-## Comandos Útiles
-
-```bash
 # Reiniciar
 sudo systemctl restart fastapi
 
-# Ver estado
-sudo systemctl status fastapi
+# Probar conexión a DB
+psql -h tu-rds-endpoint -U admin -d postgres
+```
 
-# Actualizar código
-git pull
-sudo systemctl restart fastapi
+## Variables de Entorno
+
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/db  # Requerido
+APP_PORT=8000                                      # Opcional
 ```
 
 ---
-
-## 🏗️ Arquitectura de Producción
-
-Para despliegue con **API Gateway + ALB + Auto Scaling**, lee la guía completa:
-
-👉 **[ARCHITECTURE.md](ARCHITECTURE.md)**
-
-Incluye:
-
-- Configuración de ALB y ASG
-- Health checks y scaling policies
-- API Gateway setup
-- Security best practices
-- Estimación de costos
-- Troubleshooting
-
----
-
-Documentación interactiva: `/docs`
 
 Hecho con ❤️ y FastAPI

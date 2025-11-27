@@ -3,18 +3,11 @@ Description=FastAPI Products API
 After=network.target
 
 [Service]
-Type=notify
 User=ec2-user
-Group=ec2-user
-WorkingDirectory=/home/ec2-user/fastapi-gunicorn-ec2
-Environment="PATH=/home/ec2-user/fastapi-gunicorn-ec2/venv/bin"
-ExecStart=/home/ec2-user/fastapi-gunicorn-ec2/venv/bin/gunicorn -c gunicorn_config.py app.main:app
-ExecReload=/bin/kill -s HUP $MAINPID
-KillMode=mixed
-TimeoutStopSec=5
-PrivateTmp=true
+WorkingDirectory=/home/ec2-user/Backend-FastApi-EC2
+Environment="PATH=/home/ec2-user/Backend-FastApi-EC2/venv/bin"
+ExecStart=/home/ec2-user/Backend-FastApi-EC2/venv/bin/gunicorn -c gunicorn_config.py app.main:app
 Restart=always
-RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
